@@ -6,6 +6,7 @@
    - url
    - user
    - password
+   - driver
 2. 加载并注册驱动
 3. 获取连接
 
@@ -99,6 +100,64 @@ import java.util.Properties;
 
 
 
-## 注意
+## 将JDBC建立连接、关闭资源的固定代码封装起来
 
-connection需要关闭，否则会引起资源的极大浪费或者内存泄漏，这里只是获得连接，所以没有关闭。
+JDBC建立连接、关闭资源的代码是通用的代码，我们可以将它们封装在一个工具类中，以实现代码复用。
+
+```java
+package com.czf.util;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.*;
+import java.util.Properties;
+
+/**
+ *操作数据库的工具类
+ */
+public class JDBCUtils {
+    /**
+     * 获取连接
+     * @return  Connection
+     * @throws IOException
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     */
+    public static Connection getConnection() throws IOException, ClassNotFoundException, SQLException {
+        //1.读取配置文件中的基本信息
+        InputStream resourceAsStream = ClassLoader.getSystemClassLoader().getResourceAsStream("jdbc.properties");
+        Properties properties = new Properties();
+        properties.load(resourceAsStream);
+        String user = properties.getProperty("user");
+        String password = properties.getProperty("password");
+        String url = properties.getProperty("url");
+        String driverClass = properties.getProperty("driverClass");
+        //2.加载驱动
+        Class.forName(driverClass);
+        //3.获取连接
+        return DriverManager.getConnection(url, user, password);
+    }
+
+    /**
+     * 关闭连接和Statement的操作
+     * @param connection
+     * @param Statement
+     */
+    public static void closeResource(Connection connection, Statement Statement){
+        try {
+            if (Statement != null)
+                Statement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            if (connection != null)
+                connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+```
+
